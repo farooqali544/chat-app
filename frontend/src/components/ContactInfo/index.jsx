@@ -42,7 +42,7 @@ export default function ContactInfo() {
         transition: "max-width 0.2s ease-out",
         overflowX: "hidden",
         height: "100%",
-        px: "20px",
+        // px: "20px",
         pb:'20px',
         backgroundColor: theme.bg.primary,
       }}

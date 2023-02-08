@@ -1,4 +1,4 @@
-const io = require("socket.io")(8900, {
+const io = require("socket.io")(8000, {
   cors: {
     origin: "*",
   },
@@ -19,19 +19,22 @@ const getUser = (userId) => {
 };
 
 io.on("connection", (socket) => {
+  console.log("connected", socket.id);
   socket.on("addUser", (userId) => {
     addUser(userId, socket.id);
     io.emit("getUsers", users);
   });
 
   socket.on("sendMessage", (payload) => {
-    const { receiver } = payload;
-    const receiverSocketId = getUser(receiver)?.socketId;
+    console.log(users);
+    const { receiverId, ...message } = payload;
+    const receiverSocketId = getUser(receiverId)?.socketId;
 
-    receiverSocketId && io.to(receiverSocketId).emit("getMessage", payload);
+    receiverSocketId && io.to(receiverSocketId).emit("receiveMessage", message);
   });
 
   socket.on("disconnect", () => {
+    console.log("disconnected", socket.id);
     const userId = users.find((user) => user.socketId === socket.id)?.userId;
     userId && io.emit("userDisconnected", userId);
     removeUser(socket.id);

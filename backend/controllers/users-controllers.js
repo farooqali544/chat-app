@@ -1,61 +1,67 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const HttpError = require("../models/http-error");
-const { validationErrors } = require("../validators/users-validators");
 const { unkownError } = require("../util/unkown-error");
 const jwt = require("jsonwebtoken");
-const Conversation = require("../models/Conversation");
-
-const getAllUsers = async (req, res, next) => {
-  try {
-    const allUsers = await User.find({}, "-password");
-    return res.json(allUsers);
-  } catch (err) {
-    return unkownError(next, err);
-  }
-};
-
-const getUserByEmail = async (req, res, next) => {
-  const { email } = req.params;
-  let foundUser;
-  try {
-    foundUser = await User.findOne({ email: email }, "-password");
-  } catch (err) {
-    return unkownError(next, err);
-  }
-
-  return res.json(foundUser);
-};
 
 const getUser = async (req, res, next) => {
-  const userData = req.userData;
+  const authUser = req.authUser;
 
   let user;
-
   try {
-    user = await User.findById(userData.userId, "-password");
+    user = await User.findById(authUser._id, "-password -contacts");
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
-
   res.json(user);
 };
 
-const signup = async (req, res, next) => {
-  const invalidBody = validationErrors(req);
-  if (invalidBody) return next(invalidBody);
+const searchUsersByNameOrEmail = async (req, res, next) => {
+  const authUser = req.authUser;
+  const { searchValue } = req.params;
 
+  let normalizedEmail = searchValue.toLowerCase();
+
+  let users;
+
+  try {
+    //get authUser contacts
+    const authUserContacts = (await User.findById(authUser._id, "contacts -_id")).contacts;
+
+    //search users by name or email excluding authUser
+    users = await User.find(
+      {
+        _id: { $ne: authUser._id },
+        $or: [{ name: { $regex: `^${searchValue}`, $options: "i" } }, { email: normalizedEmail }],
+      },
+      "-password -contacts"
+    ).lean();
+
+    // if user is already a contact, set isContact = true
+    users.forEach((user) => {
+      if (authUserContacts.includes(user._id)) {
+        user.isContact = true;
+      }
+    });
+  } catch (err) {
+    return next(unkownError(err));
+  }
+
+  res.json(users);
+};
+
+const signup = async (req, res, next) => {
   const { name, email, password } = req.body;
 
   let existingUser;
   try {
     existingUser = await User.findOne({ email: email });
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
   if (existingUser) {
-    const error = new HttpError("User exists already, pleason login instead", 422);
+    const error = new HttpError("User exists already, please login instead", 422);
     return next(error);
   }
 
@@ -64,75 +70,57 @@ const signup = async (req, res, next) => {
   try {
     hashedPassword = await bcrypt.hash(password, 12);
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
-  const createdUser = new User({
+  const newUser = new User({
     name,
     email,
     password: hashedPassword,
   });
 
   try {
-    await createdUser.save();
+    await newUser.save();
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
   let token;
   try {
-    token = jwt.sign({ userId: createdUser.id, name: createdUser.name, email: createdUser.email }, "secret", { expiresIn: "1h" });
+    token = jwt.sign(
+      { _id: newUser._id, name: newUser.name, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "10000h" }
+    );
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
-  return res.status(201).json({ userId: createdUser.id, name: createdUser.name, email: createdUser.email, token: token });
-};
-
-const updateProfilePic = async (req, res, next) => {
-  const { uid } = req.params;
-  const { image } = req.body;
-
-  let existingUser;
-  try {
-    existingUser = await User.findById(uid);
-  } catch (err) {
-    return unkownError(next, err);
-  }
-
-  existingUser.image = image;
-
-  try {
-    await existingUser.save();
-  } catch (err) {
-    return unkownError(next, err);
-  }
-  res.json(image);
+  return res
+    .status(201)
+    .json({ _id: newUser._id, name: newUser.name, email: newUser.email, token: token });
 };
 
 const login = async (req, res, next) => {
-  const invalidBody = validationErrors(req);
-  if (invalidBody) return next(invalidBody);
-
   const { email, password } = req.body;
 
-  let existingUser;
+  let user;
   try {
-    existingUser = await User.findOne({ email: email });
+    user = await User.findOne({ email: email });
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
-  if (!existingUser) {
+  if (!user) {
     const error = new HttpError("No such user found, please signup", 403);
     return next(error);
   }
 
   let isValidPassword = false;
   try {
-    isValidPassword = await bcrypt.compare(password, existingUser.password);
+    isValidPassword = await bcrypt.compare(password, user.password);
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
   if (!isValidPassword) {
@@ -142,26 +130,40 @@ const login = async (req, res, next) => {
 
   let token;
   try {
-    token = jwt.sign({ userId: existingUser.id, email: existingUser.email }, "secret", { expiresIn: "1h" });
+    token = jwt.sign(
+      { _id: user._id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "10000h" }
+    );
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
-  return res.status(201).json({ userId: existingUser.id, email: existingUser.email, token: token });
+  return res.status(201).json({
+    _id: user.id,
+    name: user.name,
+    email: user.email,
+    image: user.image,
+    // contacts: user.contacts,
+    token: token,
+  });
 };
 
 const addContact = async (req, res, next) => {
-  const { uid, contactId } = req.body;
+  const authUser = req.authUser;
+  const { contactId } = req.params;
 
   let user;
   try {
-    user = await User.findById(uid, "-password");
+    user = await User.findById(authUser._id, "-password");
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
 
-  if (uid === contactId) {
-    const error = new HttpError("wtf are you doing, it's your account nigga");
+  if (authUser._id === contactId) {
+    const error = new HttpError(
+      "Looks like you're feeling lonely, but I'm afraid adding yourself as a friend won't fill that void. Sorry, it's just not possible here.😔"
+    );
     return next(error);
   }
 
@@ -173,28 +175,73 @@ const addContact = async (req, res, next) => {
   user.contacts.push(contactId);
 
   try {
-    user.save();
+    await user.save();
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
+  }
+
+  res.status(201).json("success");
+};
+
+const removeContact = async (req, res, next) => {
+  const authUser = req.authUser;
+  const { contactId } = req.params;
+
+  let user;
+  try {
+    user = await User.findById(authUser._id, "-password");
+  } catch (err) {
+    return next(unkownError(err));
+  }
+
+  const updatedContacts = user.contacts.filter((id) => id != contactId);
+
+  user.contacts = updatedContacts;
+
+  try {
+    await user.save();
+  } catch (err) {
+    return next(unkownError(err));
   }
 
   res.status(201).json(user);
 };
 
-const updateUser = async (req, res, next) => {
-  const { uid } = req.params;
-const data = req.body;
-  let user;
+const getContacts = async (req, res, next) => {
+  const authUser = req.authUser;
+
+  let contacts;
+
   try {
-    user = await User.findByIdAndUpdate(uid, data, {new:true});
+    contacts = await User.find({ _id: authUser._id }, "contacts -_id");
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
-  if (!user) {
-    const error = new HttpError("Not found user", 403);
-    return next(error);
-  }
-  res.json(user);
+  res.json(contacts);
 };
 
-module.exports = { getUser, signup, updateProfilePic, login, getAllUsers, getUserByEmail, addContact, updateUser };
+const updateUser = async (req, res, next) => {
+  const authUser = req.authUser;
+  const { name, image } = req.body;
+
+  let updatedUser = {};
+  if (name) updatedUser.name = name;
+  if (image) updatedUser.image = image;
+
+  try {
+    await User.findByIdAndUpdate(authUser._id, { $set: updatedUser }, { new: true });
+  } catch (err) {
+    return next(unkownError(err));
+  }
+};
+
+module.exports = {
+  getUser,
+  searchUsersByNameOrEmail,
+  signup,
+  login,
+  addContact,
+  removeContact,
+  getContacts,
+  updateUser,
+};

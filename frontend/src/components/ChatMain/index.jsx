@@ -1,25 +1,34 @@
 import { Box } from "@mui/system";
 import React, { useContext, useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { getMessages } from "../../redux/slices/messages";
 import { DarkModeContext } from "../../shared/context/DarkModeContext";
+import { SocketContext } from "../../shared/context/SocketContext";
 import ChatMainHeader from "./ChatMainHeader";
 import Messages from "./Messages";
 import SendMessage from "./SendMessage";
 
 export default function ChatMain(props) {
-  const { socket } = props;
   const { darkMode } = useContext(DarkModeContext);
-  const { activeConversation } = useSelector((state) => state.conversationReducer);
+  const privateConversations = useSelector((state) => state.privateConversations);
+  const activeConversation = privateConversations.activeConversation;
 
   return (
-    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", borderRight: !darkMode && "1px solid #F2F2F2" }}>
+    <Box
+      sx={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        borderRight: !darkMode && "1px solid #F2F2F2",
+      }}
+    >
       {activeConversation && (
         <>
-          <ChatMainHeader conversationUser={activeConversation.conversationUser} conversationId={activeConversation.conversationId} />
+          <ChatMainHeader activeConversation={activeConversation} />
 
-          <Messages socket={socket} conversationUser={activeConversation.conversationUser} conversationId={activeConversation.conversationId} />
+          <Messages activeConversation={activeConversation} />
 
-          <SendMessage socket={socket} conversationUser={activeConversation.conversationUser} conversationId={activeConversation.conversationId} />
+          <SendMessage activeConversation={activeConversation} />
         </>
       )}
     </Box>

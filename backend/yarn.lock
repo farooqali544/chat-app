@@ -147,6 +147,11 @@ chokidar@^3.5.2:
   optionalDependencies:
     fsevents "~2.3.2"
 
+clone@^1.0.2:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/clone/-/clone-1.0.4.tgz#da309cc263df15994c688ca902179ca3c7cd7c7e"
+  integrity sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==
+
 concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
@@ -217,6 +222,11 @@ destroy@1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.2.0.tgz#4803735509ad8be552934c67df614f94e66fa015"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
+
+dotenv@^16.0.3:
+  version "16.0.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.3.tgz#115aec42bac5053db3c456db30cc243a5a836a07"
+  integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
 
 ecdsa-sig-formatter@1.0.11:
   version "1.0.11"
@@ -587,6 +597,14 @@ mongodb@4.8.1:
   optionalDependencies:
     saslprep "^1.0.3"
 
+mongoose-id-validator@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/mongoose-id-validator/-/mongoose-id-validator-0.6.0.tgz#cdf343fcbf952b2b4e25fe882746df0aef4c23ee"
+  integrity sha512-y3b3/PkmaiMKSbKB8tsEEGUjgCgKQGpD2Ood7jaVEob3V2HWgnmNKCgiSQUpEtQuDU0lUnLJQ5JE9PH1Bytziw==
+  dependencies:
+    clone "^1.0.2"
+    traverse "^0.6.6"
+
 mongoose-unique-validator@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/mongoose-unique-validator/-/mongoose-unique-validator-3.1.0.tgz#10d6fa10ccf5515461e3b5693f193d227546d60b"
@@ -887,6 +905,11 @@ tr46@^3.0.0:
   integrity sha512-l7FvfAHlcmulp8kr+flpQZmVwtu7nfRV7NZujtN0OqES8EL4O4e0qqzL0DC5gAvx/ZC/9lk6rhcUwYvkBnBnYA==
   dependencies:
     punycode "^2.1.1"
+
+traverse@^0.6.6:
+  version "0.6.7"
+  resolved "https://registry.yarnpkg.com/traverse/-/traverse-0.6.7.tgz#46961cd2d57dd8706c36664acde06a248f1173fe"
+  integrity sha512-/y956gpUo9ZNCb99YjxG7OaslxZWHfCHAUUfshwqOXmxUIvqLjVO581BT+gM59+QV9tFe6/CGG53tsA1Y7RSdg==
 
 type-is@~1.6.18:
   version "1.6.18"

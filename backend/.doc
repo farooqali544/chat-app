@@ -1,0 +1,3 @@
+//._id,name etc is what is retrieved from database
+
+//.userId,.userName is what is retrieved after verifying user using jsonWebToken

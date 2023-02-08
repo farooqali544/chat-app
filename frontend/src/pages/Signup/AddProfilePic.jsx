@@ -10,7 +10,7 @@ import { v4 } from "uuid";
 import { useAxios } from "../../shared/hooks/useAxios";
 import Alert from "../../components/shared/Alert";
 import { useDispatch } from "react-redux";
-import { login } from "../../redux/reducers/userReducer";
+// import { login } from "../../redux/slices/userReducer";
 
 export default function AddProfilePic(props) {
   const { createdUser } = props;
@@ -37,7 +37,7 @@ export default function AddProfilePic(props) {
       });
 
       await sendRequest(`/users/updateProfilePic/${createdUser.userId}`, "PATCH", { image: uploadedImageUrl });
-      dispatch(login({ token: createdUser.token }));
+      // dispatch(login({ token: createdUser.token }));
     } catch (err) {
     } finally {
       setIsLoading(false);
@@ -45,7 +45,7 @@ export default function AddProfilePic(props) {
   };
 
   const onSkip = () => {
-    dispatch(login({ token: createdUser.token }));
+    // dispatch(login({ token: createdUser.token }));
   };
 
   return (

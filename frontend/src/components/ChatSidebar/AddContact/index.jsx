@@ -1,33 +1,28 @@
-import { Button, Divider, IconButton, TextField, useTheme } from "@mui/material";
+import { memo } from "react";
+import { Divider, IconButton, useTheme } from "@mui/material";
 import { Box } from "@mui/system";
-import React, { useState } from "react";
 import { Text } from "../../shared/Text";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { Avatar } from "../../../components/shared/Avatar";
-import { ReactComponent as NotFoundIcon } from "../../../assets/svgs/Block.svg";
-import { useAxios } from "../../../shared/hooks/useAxios";
-import { useSelector } from "react-redux";
+import AddIcon from "@mui/icons-material/Add";
+import CheckIcon from "@mui/icons-material/Check";
 import { SearchUser } from "./SearchUser";
+import { useDispatch, useSelector } from "react-redux";
+import { addContact, removeContact } from "../../../redux/slices/searchUsers";
 
-const AddContact = React.memo(function AddContact(props) {
+
+const AddContact = memo(function AddContact(props) {
   const { open, closeAddContactForm } = props;
-  const [contact, setContact] = useState();
-  const [contactAdded, setContactAdded] = useState(false);
+  const searchUsers = useSelector((state) => state.searchUsers);
   const theme = useTheme();
-  const { sendRequest, isLoading, error, clearError } = useAxios();
-  const { user } = useSelector((state) => state.userReducer);
+  const dispatch = useDispatch();
 
-  const onChangeSearch = (data) => {
-    clearError();
-    setContactAdded(false);
-    setContact(data);
+  const onAddContact = async (id) => {
+    dispatch(addContact(id));
   };
 
-  const onAddContact = async () => {
-    try {
-      await sendRequest("/users/addContact", "PATCH", { uid: user.userId, contactId: contact._id });
-      setContactAdded(true);
-    } catch (err) {}
+  const onRemoveContact = async (id) => {
+    dispatch(removeContact(id));
   };
 
   return (
@@ -56,29 +51,82 @@ const AddContact = React.memo(function AddContact(props) {
         </Box>
         <Divider />
 
-        <SearchUser onChangeSearch={onChangeSearch} />
+        <SearchUser />
 
-        {contact === null && (
+        <Box sx={{ px: 2 }}>
+          {searchUsers.data.map((user) => (
+            <Box sx={{ mt: 4, display: "flex", alignItems: "center" }}>
+              <Avatar src={user.image} />
+              <Box sx={{ ml: "15px" }}>
+                <Text variant="main" color={theme.palette.text.primary}>
+                  {user.name}
+                </Text>
+                <Text variant="regular" color={theme.palette.text.secondary}>
+                  {user.email}
+                </Text>
+              </Box>
+
+              {user.isContact ? (
+                <IconButton
+                  sx={{ ml: "auto" }}
+                  color="primary"
+                  onClick={() => onRemoveContact(user._id)}
+                >
+                  <CheckIcon color="primary" />
+                </IconButton>
+              ) : (
+                <IconButton
+                  onClick={() => onAddContact(user._id)}
+                  sx={{ ml: "auto" }}
+                  color="primary"
+                >
+                  <AddIcon color="primary" />
+                </IconButton>
+              )}
+            </Box>
+          ))}
+        </Box>
+
+        {/* {contact === null && (
           <Box sx={{ mt: 3, px: 2, display: "flex", alignItems: "center", gap: 2 }}>
             <NotFoundIcon style={{ flexShrink: 0 }} />
             <Text variant="regular" color={theme.palette.text.primary}>
               No such account found with entered email, Try another email
             </Text>
           </Box>
-        )}
+        )} */}
 
-        {contact && (
+        {/* {contact && (
           <>
             <Box sx={{ mt: 3, px: 2 }}>
               <Avatar src={contact.image} size={100} style={{ mx: "auto" }} />
-              <Text variant="main" color={theme.palette.text.primary} style={{ textAlign: "center", mt: 2 }}>
+              <Text
+                variant="main"
+                color={theme.palette.text.primary}
+                style={{ textAlign: "center", mt: 2 }}
+              >
                 {contact.name}
               </Text>
             </Box>
 
-            <Box sx={{ mt: 3, px: 2, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, alignItems: "center" }}>
+            <Box
+              sx={{
+                mt: 3,
+                px: 2,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 2,
+                alignItems: "center",
+              }}
+            >
               {!contactAdded && (
-                <Button disabled={isLoading} onClick={onAddContact} sx={{ flexShrink: 0 }} variant="contained">
+                <Button
+                  // disabled={isLoading}
+                  onClick={onAddContact}
+                  sx={{ flexShrink: 0 }}
+                  variant="contained"
+                >
                   Add Contact
                 </Button>
               )}
@@ -90,7 +138,7 @@ const AddContact = React.memo(function AddContact(props) {
               {contactAdded && <Text color="white">Contact Added.</Text>}
             </Box>
           </>
-        )}
+        )} */}
       </Box>
     </Box>
   );

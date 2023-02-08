@@ -7,16 +7,16 @@ import { ReactComponent as DarkModeIcon } from "../../assets/svgs/DarkMode.svg";
 import { useContext } from "react";
 import { DarkModeContext } from "../../shared/context/DarkModeContext";
 import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../redux/reducers/userReducer";
-import { setInitialContact } from "../../redux/reducers/contactReducer";
-import { setInitialConversation } from "../../redux/reducers/conversationReducer";
+import { logout } from "../../redux/slices/auth";
+import {useNavigate} from 'react-router-dom'
 
 const SidebarHeader = React.memo(function SidebarHeader(props) {
   const { openAddContactForm } = props;
   const { darkMode, toggleColorMode } = useContext(DarkModeContext);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const { user } = useSelector((state) => state.userReducer);
+  const auth = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const navigate = useNavigate()
 
   const openMenu = (event) => {
     setMenuAnchorEl(event.currentTarget);
@@ -34,10 +34,9 @@ const SidebarHeader = React.memo(function SidebarHeader(props) {
   };
 
   const logoutHandler = () => {
-    dispatch(setInitialContact());
-    dispatch(setInitialConversation());
-    dispatch(setInitialContact());
     dispatch(logout());
+    dispatch({ type: "RESET_STORE" });
+    navigate("/login");
   };
 
   return (
@@ -51,14 +50,14 @@ const SidebarHeader = React.memo(function SidebarHeader(props) {
         gap: 2,
       }}
     >
-      <Avatar size={40} src={user?.image} />
+      <Avatar size={40} img={auth.user?.image} />
 
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <IconButton>
           <EditIcon id={darkMode ? "light_svg" : ""} />
         </IconButton>
         <Tooltip placement="bottom" title={darkMode ? "Light Mode" : "Dark Mode"}>
-          <IconButton onClick={() =>toggleColorMode()}>
+          <IconButton onClick={() => toggleColorMode()}>
             <DarkModeIcon id={darkMode ? "light_svg" : "moon-alt"} />
           </IconButton>
         </Tooltip>

@@ -1,7 +1,5 @@
 import { Box, useTheme } from "@mui/material";
 import React, { useContext } from "react";
-import { useDispatch } from "react-redux";
-import { changeActiveConversation } from "../../../redux/reducers/conversationReducer";
 import { DarkModeContext } from "../../../shared/context/DarkModeContext";
 import { Avatar } from "../../shared/Avatar";
 import { Text } from "../../shared/Text";
@@ -10,20 +8,12 @@ export default function Contact(props) {
   const { active, contact } = props;
   const theme = useTheme();
   const darkMode = useContext(DarkModeContext);
-  const dispatch = useDispatch();
 
   const createMarkup = (html) => {
     return { __html: html };
   };
 
-  const clickHandler = () => {
-    dispatch(
-      changeActiveConversation({
-        conversationId: null,
-        conversationUser: contact,
-      })
-    );
-  };
+  const clickHandler = () => {};
 
   return (
     <Box

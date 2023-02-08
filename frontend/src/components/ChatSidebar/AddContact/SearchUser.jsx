@@ -1,35 +1,31 @@
 import { useTheme } from "@emotion/react";
-import { Box, Button, TextField } from "@mui/material";
-import React, { useState } from "react";
-import { useAxios } from "../../../shared/hooks/useAxios";
+import { Box, TextField } from "@mui/material";
+import { useDispatch } from "react-redux";
+import { resetSearchUsers, searchUsers } from "../../../redux/slices/searchUsers";
 import { Text } from "../../shared/Text";
 
 export function SearchUser(props) {
-  const { onChangeSearch } = props;
-
-  const [email, setEmail] = useState("");
   const theme = useTheme();
-  const { sendRequest, isLoading, error, clearError } = useAxios();
+  const dispatch = useDispatch();
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
+  const searchHandler = (e) => {
+    if (!e.target.value) return dispatch(resetSearchUsers());
 
-    let foundContact;
-    try {
-      foundContact = await sendRequest(`/users/email/${email}`, "GET");
-      onChangeSearch(foundContact);
-    } catch (err) {}
+    dispatch(searchUsers(e.target.value));
   };
 
   return (
-    <Box sx={{ mt: 3, px: 2 }} component="form" onSubmit={onSubmit}>
+    <Box sx={{ mt: 3, px: 2 }}>
       <Text variant="bold" color={theme.palette.text.primary}>
-        Contact Email
+        Search Users By Name or Email
       </Text>
-      <TextField value={email} onChange={(e) => setEmail(e.target.value)} fullWidth size="small" sx={{ mt: 1 }} placeholder="Contact Email" />
-      <Button type="submit" color="primary" fullWidth variant="contained" sx={{ fontWeight: 500, mt: 2 }}>
-        Search
-      </Button>
+      <TextField
+        onChange={searchHandler}
+        fullWidth
+        size="small"
+        sx={{ mt: 1 }}
+        placeholder="Name or Email"
+      />
     </Box>
   );
 }

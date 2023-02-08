@@ -7,7 +7,6 @@ import { ReactComponent as VideoCallIcon } from "../../assets/svgs/Video.svg";
 import { ReactComponent as CallIcon } from "../../assets/svgs/Call.svg";
 import { ManageIcon } from "../shared/ManageIcon";
 import { DarkModeContext } from "../../shared/context/DarkModeContext";
-import { useSelector } from "react-redux";
 
 function getDifferenceInDays(date1, date2) {
   const diffInMs = Math.abs(date2 - date1);
@@ -22,7 +21,12 @@ const getDateTime = (dateStr) => {
 
   const daysDifference = parseInt(getDifferenceInDays(messageDate, today));
 
-  if (daysDifference === 0) return messageDate.toLocaleString("en-US", { hour: "numeric", minute: "numeric", hour12: true });
+  if (daysDifference === 0)
+    return messageDate.toLocaleString("en-US", {
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    });
 
   if (daysDifference === 1) return "Yesterday";
 
@@ -31,17 +35,12 @@ const getDateTime = (dateStr) => {
 };
 
 export default memo(function ChatMainHeader(props) {
-  const { conversationId, conversationUser } = props;
-  const { onlineConversations } = useSelector((state) => state.conversationReducer);
+  const { activeConversation } = props;
   const theme = useTheme();
   const { darkMode } = useContext(DarkModeContext);
 
-  const getLastSeen = () => {
-    if (onlineConversations[conversationUser.userId]) {
-      return "Online";
-    }
-    return "Last Seen " + getDateTime(conversationUser.lastSeen);
-  };
+  const name = activeConversation.members[0].name;
+  const image = activeConversation.members[0].image;
 
   return (
     <Box
@@ -56,14 +55,14 @@ export default memo(function ChatMainHeader(props) {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Avatar src={conversationUser.image} />
+        <Avatar src={image} />
 
         <Box>
           <Text variant="main" color={theme.palette.text.primary}>
-            {conversationUser.name}
+            {name}
           </Text>
           <Text variant="small" color="#B9BEC3" style={{ fontWeight: 500 }}>
-            {getLastSeen()}
+            {/* {getLastSeen()} */}
           </Text>
         </Box>
       </Box>

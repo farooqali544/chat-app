@@ -2,42 +2,49 @@ const express = require("express");
 const Message = require("../models/Message");
 const Conversation = require("../models/Conversation");
 const { unkownError } = require("../util/unkown-error");
+const checkAuth = require("../middlewares/check-auth");
+const { sendMessage, getMessages, readMessages } = require("../controllers/messages-controller");
+const { check, param } = require("express-validator");
+const { validateRequest } = require("../validators/validateRequest");
+const { isValidConversationId } = require("../validators/validators");
 const router = express.Router();
 
 //post message
 
-router.post("/", async (req, res, next) => {
-  const newMessage = new Message(req.body);
-
-  try {
-    const currentDateTime = new Date();
-    await Conversation.findByIdAndUpdate(req.body.conversationId, { updatedAt: currentDateTime });
-  } catch (err) {
-    return unkownError(next, err);
-  }
-
-  try {
-    const savedMessage = await newMessage.save();
-    return res.status(201).json(savedMessage);
-  } catch (err) {
-    unkownError(next, err);
-  }
-});
+router
+  .route("/sendMessage")
+  .post(
+    checkAuth,
+    [
+      check("conversationId").custom(isValidConversationId),
+      check("text", "atleast one character should be sent as a text").notEmpty(),
+    ],
+    validateRequest,
+    sendMessage
+  );
 
 // get messaages
 
-router.get("/:conversationId", async (req, res, next) => {
-  const { conversationId } = req.params;
+router
+  .route("/:conversationId")
+  .get(
+    checkAuth,
+    [
+      check("firstMessageTime").optional().isISO8601().withMessage("invalid lastmessage time"),
+      param("conversationId").custom(isValidConversationId),
+    ],
+    validateRequest,
+    getMessages
+  );
 
-  try {
-    const messages = await Message.find({
-      conversationId: conversationId,
-    });
-    return res.json(messages);
-  } catch (err) {
-    unkownError(next, err);
-  }
-});
+router
+  .route("/readMessages/:conversationId")
+  .patch(
+    checkAuth,
+    param("conversationId").custom(isValidConversationId),
+    validateRequest,
+    readMessages
+  );
 
 router.get("/unread/:uid", async (req, res, next) => {
   const { uid } = req.params;
@@ -47,8 +54,14 @@ router.get("/unread/:uid", async (req, res, next) => {
 
   const total = await Promise.all(
     conversationIds.map(async (conversationId) => {
-      const lastMessage = await Message.findOne({ conversationId: conversationId }).sort([["createdAt", -1]]);
-      const unreadMessages = await Message.count({ conversationId: conversationId, sender: { $ne: uid }, read: null });
+      const lastMessage = await Message.findOne({ conversationId: conversationId }).sort([
+        ["createdAt", -1],
+      ]);
+      const unreadMessages = await Message.count({
+        conversationId: conversationId,
+        sender: { $ne: uid },
+        read: null,
+      });
 
       return { conversationId, unreadMessages, lastMessage };
     })
@@ -64,9 +77,12 @@ router.patch("/unread/:conversationId", async (req, res, next) => {
 
   let response;
   try {
-    response = await Message.updateMany({ conversationId: conversationId, read: null }, { read: new Date() });
+    response = await Message.updateMany(
+      { conversationId: conversationId, read: null },
+      { read: new Date() }
+    );
   } catch (err) {
-    return unkownError(next, err);
+    return next(unkownError(err));
   }
   res.json(response);
 });

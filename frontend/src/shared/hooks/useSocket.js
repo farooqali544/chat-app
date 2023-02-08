@@ -1,37 +1,50 @@
-import React, { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { updateMessages } from "../../redux/reducers/messageReducer";
 import { io } from "socket.io-client";
+import { insertMessage, readMessages } from "../../redux/slices/messages";
+import {
+  addLastMessageToPrivateConversation,
+  markMessagesAsRead,
+  sortPrivateConversations,
+} from "../../redux/slices/privateConversations";
 
-const socket = io.connect("ws://localhost:8900");
+const socket = io("http://localhost:8000");
 
-export default function useSocket(userId) {
-  const { activeConversation } = useSelector((state) => state.conversationReducer);
-  const { messages } = useSelector((state) => state.messageReducer);
+export default function useSocket() {
+  const auth = useSelector((state) => state.auth);
+  const privateConversations = useSelector((state) => state.privateConversations);
   const dispatch = useDispatch();
 
+  // Add user on initial load
   useEffect(() => {
-    if (!userId || !socket) return;
+    socket.emit("addUser", auth.user._id);
+  }, []);
 
-    socket.emit("addUser", userId);
-    socket.on("getUsers", (users) => {
-      console.log(users);
-    });
-  }, [userId, socket]);
-
-
-    socket.on("getMessage", (payload) => {
-      console.log(messages);
-      if (activeConversation.conversationId === payload.conversationId) {
-        console.log(payload);
-        dispatch(updateMessages([...messages, payload]));
+  useEffect(() => {
+    const receiveMessageHandler = (payload) => {
+      if (privateConversations.activeConversation?._id === payload.conversationId) {
+        dispatch(insertMessage(payload));
+        dispatch(readMessages(payload));
+      } else {
+        dispatch(addLastMessageToPrivateConversation(payload));
+        dispatch(insertMessage(payload));
       }
-    });
+      dispatch(sortPrivateConversations());
+    };
 
+    socket.on("receiveMessage", receiveMessageHandler);
 
-  const emitMessage = (payload) => {
+    return () => {
+      socket.off("receiveMessage", receiveMessageHandler);
+    };
+  }, [privateConversations.activeConversation]);
+
+  const socket_sendMessage = (payload) => {
     socket.emit("sendMessage", payload);
+    const { receiverId, ...message } = payload;
+    dispatch(markMessagesAsRead(message));
+    dispatch(sortPrivateConversations());
   };
 
-  return { emitMessage };
+  return { socket_sendMessage };
 }

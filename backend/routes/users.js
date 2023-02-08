@@ -1,28 +1,54 @@
 const express = require("express");
+const { check, param } = require("express-validator");
 const usersController = require("../controllers/users-controllers");
 const checkAuth = require("../middlewares/check-auth");
+const { validateRequest } = require("../validators/validateRequest");
 const router = express.Router();
-const { signupValidator, loginValidator } = require("../validators/users-validators");
+const { isValidUserId } = require("../validators/validators");
 
-router.get("/", usersController.getAllUsers);
+router.route("/getUser").get(checkAuth, usersController.getUser);
 
-router.get("/getUser", checkAuth, usersController.getUser);
+router.post(
+  "/signup",
+  [
+    check("name").notEmpty(),
+    check("email").normalizeEmail().isEmail(),
+    check("password").isLength({ min: 5 }),
+  ],
+  validateRequest,
+  usersController.signup
+);
 
-router.get("/email/:email", usersController.getUserByEmail);
+router.post("/login", check("email").normalizeEmail().isEmail(), usersController.login);
 
-router.patch('/:uid', usersController.updateUser);
+router
+  .route("/searchUsersByNameOrEmail/:searchValue")
+  .get(
+    checkAuth,
+    [check("searchValue").notEmpty().withMessage("searchValue is required")],
+    usersController.searchUsersByNameOrEmail,
+    validateRequest
+  );
 
+//update name and/or image
+router.patch("/updateUser", checkAuth, usersController.updateUser);
 
-router.post("/signup", signupValidator(), usersController.signup);
+router.patch(
+  "/addContact/:contactId",
+  checkAuth,
+  check("contactId").custom(isValidUserId),
+  validateRequest,
+  usersController.addContact
+);
 
-router.patch("/updateProfilePic/:uid", usersController.updateProfilePic);
+router.patch(
+  "/removeContact/:contactId",
+  checkAuth,
+  check("contactId").custom(isValidUserId),
+  validateRequest,
+  usersController.removeContact
+);
 
-router.post("/login", loginValidator(), usersController.login);
-
-router.patch('/addContact',usersController.addContact );
-
-router.get("/checkAuth", checkAuth, (req, res, next) => {
-  res.json("Authenticated");
-});
+router.get("/getContacts", checkAuth, usersController.getContacts);
 
 module.exports = router;
